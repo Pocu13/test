@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,7 @@ interface SimpleReservationFormProps {
     phone: string;
     people: number;
     notes: string;
+    time: string; // aggiunto
   }) => void;
   isSubmitting: boolean;
   alwaysVisible?: boolean;
@@ -33,8 +33,8 @@ export function SimpleReservationForm({
   const [phone, setPhone] = useState("");
   const [people, setPeople] = useState(selectedTable?.capacity || 2);
   const [notes, setNotes] = useState("");
-  
-  // Aggiorna il numero di persone quando viene selezionato un tavolo
+  const [time, setTime] = useState(""); // nuovo stato per l'orario
+
   useEffect(() => {
     if (selectedTable) {
       setPeople(selectedTable.capacity);
@@ -50,7 +50,8 @@ export function SimpleReservationForm({
       email,
       phone,
       people,
-      notes
+      notes,
+      time, // incluso nell'invio
     });
     
     // Reset form
@@ -59,6 +60,7 @@ export function SimpleReservationForm({
     setEmail("");
     setPhone("");
     setNotes("");
+    setTime(""); // reset orario
   };
 
   if (!alwaysVisible && !selectedTable) {
@@ -97,73 +99,3 @@ export function SimpleReservationForm({
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="email@esempio.com"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="phone">Telefono</Label>
-        <Input
-          id="phone"
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Numero di telefono"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="people">Numero di persone</Label>
-        <Select 
-          value={people.toString()} 
-          onValueChange={value => setPeople(parseInt(value))}
-          disabled={!!selectedTable}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Seleziona il numero di persone" />
-          </SelectTrigger>
-          <SelectContent>
-            {[2, 3, 4, 5, 6, 7, 9].map(num => (
-              <SelectItem key={num} value={num.toString()}>
-                {num} persone
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {selectedTable ? (
-          <p className="text-xs text-muted-foreground">
-            Il tavolo selezionato ha una capacità di {selectedTable.capacity} persone
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Verrà cercato un tavolo libero con questa capacità
-          </p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="notes">Note</Label>
-        <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Eventuali note sulla prenotazione"
-          className="resize-none"
-        />
-      </div>
-      
-      <Button 
-        type="submit" 
-        className="w-full bg-restaurant-500 hover:bg-restaurant-600"
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? "Salvataggio..." : "Crea prenotazione"}
-      </Button>
-    </form>
-  );
-}
