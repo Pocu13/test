@@ -179,55 +179,74 @@ export default function ReservationsPage() {
   }
 
   // Versione desktop
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline"
-          disabled={refreshing}
-        >
-          <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          {refreshing ? "Aggiornamento..." : "Aggiorna prenotazioni"}
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="border rounded-md p-4 bg-white">
-            <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
-            <SimpleTableMap 
-              reservations={reservations}
-              onTableSelect={handleTableSelect}
-              selectedTableId={selectedTable?.id}
-              highlightReservation={highlightReservation}
-            />
-          </div>
-          
-          <div className="border rounded-md p-4 bg-white">
-            <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
-            <ReservationList onReservationConfirmed={handleReservationStatusChange} />
-          </div>
+import { Calendar } from "@/components/ui/calendar"; // <-- assicurati che questo import esista
+
+// ...in cima al componente:
+const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+
+// ...dentro handleCreateReservation, sostituisci:
+const today = new Date();
+// con:
+const today = selectedDate ?? new Date();
+
+return (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
+      <Button 
+        onClick={handleRefresh} 
+        variant="outline"
+        disabled={refreshing}
+      >
+        <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
+        {refreshing ? "Aggiornamento..." : "Aggiorna prenotazioni"}
+      </Button>
+    </div>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-4">
+        <div className="border rounded-md p-4 bg-white">
+          <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
+          <SimpleTableMap 
+            reservations={reservations}
+            onTableSelect={handleTableSelect}
+            selectedTableId={selectedTable?.id}
+            highlightReservation={highlightReservation}
+          />
         </div>
         
-        <div>
-          <div className="border rounded-md p-4 bg-white">
-            <h3 className="text-lg font-medium mb-4">
-              {selectedTable 
-                ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
-                : "Nuova prenotazione"}
-            </h3>
-            
-            <SimpleReservationForm
-              selectedTable={selectedTable}
-              onSubmit={handleCreateReservation}
-              isSubmitting={isSubmitting}
-              alwaysVisible={true}
+        <div className="border rounded-md p-4 bg-white">
+          <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
+          <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+        </div>
+      </div>
+      
+      <div>
+        <div className="border rounded-md p-4 bg-white space-y-4">
+          <h3 className="text-lg font-medium">
+            {selectedTable 
+              ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
+              : "Nuova prenotazione"}
+          </h3>
+
+          <div>
+            <p className="text-sm mb-2 font-medium">Seleziona una data:</p>
+            <Calendar 
+              mode="single" 
+              selected={selectedDate} 
+              onSelect={setSelectedDate}
+              className="rounded-md border"
             />
           </div>
+
+          <SimpleReservationForm
+            selectedTable={selectedTable}
+            onSubmit={handleCreateReservation}
+            isSubmitting={isSubmitting}
+            alwaysVisible={true}
+          />
         </div>
       </div>
     </div>
-  );
-}
+  </div>
+);
