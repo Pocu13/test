@@ -15,7 +15,7 @@ interface SimpleReservationFormProps {
     phone: string;
     people: number;
     notes: string;
-    time: string; // ✅ Aggiunto qui
+    time: string;
   }) => void;
   isSubmitting: boolean;
   alwaysVisible?: boolean;
@@ -33,7 +33,7 @@ export function SimpleReservationForm({
   const [phone, setPhone] = useState("");
   const [people, setPeople] = useState(selectedTable?.capacity || 2);
   const [notes, setNotes] = useState("");
-  const [time, setTime] = useState(""); // ✅ Nuovo stato
+  const [time, setTime] = useState(""); // selezione orario
 
   useEffect(() => {
     if (selectedTable) {
@@ -51,7 +51,7 @@ export function SimpleReservationForm({
       phone,
       people,
       notes,
-      time // ✅ incluso
+      time
     });
     
     // Reset form
@@ -60,7 +60,7 @@ export function SimpleReservationForm({
     setEmail("");
     setPhone("");
     setNotes("");
-    setTime(""); // ✅ reset
+    setTime("");
   };
 
   if (!alwaysVisible && !selectedTable) {
@@ -70,6 +70,15 @@ export function SimpleReservationForm({
       </div>
     );
   }
+
+  const timeOptions = [
+    "20:00",
+    "20:30",
+    "21:00",
+    "21:30",
+    "22:00",
+    "22:30"
+  ];
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,16 +157,25 @@ export function SimpleReservationForm({
         )}
       </div>
 
-      {/* ✅ Campo per l'orario */}
+      {/* Campo orario con selezione */}
       <div className="space-y-2">
         <Label htmlFor="time">Orario</Label>
-        <Input
-          id="time"
-          type="time"
+        <Select
           value={time}
-          onChange={(e) => setTime(e.target.value)}
+          onValueChange={setTime}
           required
-        />
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Seleziona orario" />
+          </SelectTrigger>
+          <SelectContent>
+            {timeOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
