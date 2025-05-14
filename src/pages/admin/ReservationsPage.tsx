@@ -5,44 +5,59 @@ import { Button } from "@/components/ui/button";
 import { useReservations } from "@/contexts/ReservationContext";
 import { TableDefinition } from "@/types/table";
 import { Reservation } from "@/types";
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import { format, isSameDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw, PlusIcon } from "lucide-react";
 import { MobileReservationForm } from "@/components/admin/MobileReservationForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { Calendar } from "@/components/ui/calendar"; // IMPORT calendario
+import { Calendar } from "@/components/ui/calendar";
 
 export default function ReservationsPage() {
-  const { reservations, loading, addReservation, reload, updateReservationStatus, updateReservationTable } = useReservations();
+  const {
+    reservations,
+    loading,
+    addReservation,
+    reload,
+    updateReservationStatus,
+    updateReservationTable,
+  } = useReservations();
+
   const [selectedTable, setSelectedTable] = useState<TableDefinition | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [highlightReservation, setHighlightReservation] = useState<string | null>(null);
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()); // STATO per data
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const isMobile = useIsMobile();
 
+  // Filtro prenotazioni per data selezionata
+  const filteredReservations = useMemo(() => {
+    return reservations.filter(res =>
+      res.date && isSameDay(new Date(res.date), selectedDate)
+    );
+  }, [reservations, selectedDate]);
+
   const handleTableSelect = (table: TableDefinition) => {
-    const isTableOccupied = reservations.some(res => 
-      res.tableId === table.id && 
+    const isTableOccupied = filteredReservations.some(res =>
+      res.tableId === table.id &&
       (res.status === "pending" || res.status === "confirmed")
     );
-    
+
     if (isTableOccupied) {
       toast({
         title: "Tavolo non disponibile",
-        description: `Il tavolo ${table.number} è occupato e non può essere selezionato`,
-        variant: "destructive"
+        description: `Il tavolo ${table.number} è occupato per la data selezionata`,
+        variant: "destructive",
       });
       return;
     }
-    
+
     setSelectedTable(table);
   };
-  
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await reload();
@@ -58,9 +73,9 @@ export default function ReservationsPage() {
     notes: string;
   }) => {
     setIsSubmitting(true);
-    
+
     try {
-      const today = selectedDate ?? new Date(); // Usa data selezionata
+      const today = selectedDate ?? new Date();
 
       const newReservation = {
         name: formData.name,
@@ -68,17 +83,17 @@ export default function ReservationsPage() {
         email: formData.email,
         phone: formData.phone,
         date: today,
-        time: format(today, 'HH:mm', { locale: it }),
+        time: format(today, "HH:mm", { locale: it }),
         people: formData.people,
-        notes: formData.notes || ""
+        notes: formData.notes || "",
       };
 
       let tableInfo;
-      
+
       if (selectedTable) {
         tableInfo = {
           tableId: selectedTable.id,
-          tableNumber: selectedTable.number
+          tableNumber: selectedTable.number,
         };
         console.log(`Tavolo selezionato manualmente: ${selectedTable.number} (${selectedTable.id})`);
       }
@@ -89,7 +104,7 @@ export default function ReservationsPage() {
         await updateReservationStatus(reservation.id, "confirmed");
         toast({
           title: "Prenotazione confermata",
-          description: `Prenotazione creata${tableInfo ? ` e assegnata al tavolo ${tableInfo.tableNumber}` : ''}`,
+          description: `Prenotazione creata${tableInfo ? ` e assegnata al tavolo ${tableInfo.tableNumber}` : ""}`,
         });
       }
 
@@ -101,7 +116,7 @@ export default function ReservationsPage() {
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante la creazione della prenotazione.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -122,31 +137,27 @@ export default function ReservationsPage() {
     return () => clearInterval(intervalId);
   }, [reload]);
 
-  // VERSIONE MOBILE
+  // MOBILE
   if (isMobile) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
-          <Button 
-            onClick={handleRefresh} 
-            size="sm" 
-            variant="outline"
-            disabled={refreshing}
-          >
+          <Button onClick={handleRefresh} size="sm" variant="outline" disabled={refreshing}>
             <RefreshCw size={16} className={`mr-1 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Aggiornamento..." : "Aggiorna"}
           </Button>
         </div>
-        
+
         <div className="relative">
-          <ReservationList onReservationConfirmed={handleReservationStatusChange} />
-          
+          <ReservationList
+            reservations={filteredReservations}
+            onReservationConfirmed={handleReservationStatusChange}
+          />
+
           <Dialog open={mobileDialogOpen} onOpenChange={setMobileDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
-                className="fixed bottom-6 right-6 rounded-full w-14 h-14 bg-restaurant-500 hover:bg-restaurant-600 shadow-lg"
-              >
+              <Button className="fixed bottom-6 right-6 rounded-full w-14 h-14 bg-restaurant-500 hover:bg-restaurant-600 shadow-lg">
                 <PlusIcon size={24} />
               </Button>
             </DialogTrigger>
@@ -163,52 +174,51 @@ export default function ReservationsPage() {
     );
   }
 
-  // VERSIONE DESKTOP + TABLET
+  // DESKTOP / TABLET
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline"
-          disabled={refreshing}
-        >
+        <Button onClick={handleRefresh} variant="outline" disabled={refreshing}>
           <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
           {refreshing ? "Aggiornamento..." : "Aggiorna prenotazioni"}
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
-            <SimpleTableMap 
-              reservations={reservations}
+            <SimpleTableMap
+              reservations={filteredReservations}
               onTableSelect={handleTableSelect}
               selectedTableId={selectedTable?.id}
               highlightReservation={highlightReservation}
             />
           </div>
-          
+
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
-            <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+            <ReservationList
+              reservations={filteredReservations}
+              onReservationConfirmed={handleReservationStatusChange}
+            />
           </div>
         </div>
-        
+
         <div>
           <div className="border rounded-md p-4 bg-white space-y-4">
             <h3 className="text-lg font-medium">
-              {selectedTable 
+              {selectedTable
                 ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
                 : "Nuova prenotazione"}
             </h3>
 
             <div>
               <p className="text-sm mb-2 font-medium">Seleziona una data:</p>
-              <Calendar 
-                mode="single" 
-                selected={selectedDate} 
+              <Calendar
+                mode="single"
+                selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border"
               />
