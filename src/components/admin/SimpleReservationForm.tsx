@@ -99,3 +99,85 @@ export function SimpleReservationForm({
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@esempio.com"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="phone">Telefono</Label>
+        <Input
+          id="phone"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Numero di telefono"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="people">Numero di persone</Label>
+        <Select 
+          value={people.toString()} 
+          onValueChange={value => setPeople(parseInt(value))}
+          disabled={!!selectedTable}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Seleziona il numero di persone" />
+          </SelectTrigger>
+          <SelectContent>
+            {[2, 3, 4, 5, 6, 7, 9].map(num => (
+              <SelectItem key={num} value={num.toString()}>
+                {num} persone
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedTable ? (
+          <p className="text-xs text-muted-foreground">
+            Il tavolo selezionato ha una capacità di {selectedTable.capacity} persone
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Verrà cercato un tavolo libero con questa capacità
+          </p>
+        )}
+      </div>
+
+      {/* Nuovo campo orario */}
+      <div className="space-y-2">
+        <Label htmlFor="time">Orario</Label>
+        <Input
+          id="time"
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="notes">Note</Label>
+        <Textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Eventuali note sulla prenotazione"
+          className="resize-none"
+        />
+      </div>
+      
+      <Button 
+        type="submit" 
+        className="w-full bg-restaurant-500 hover:bg-restaurant-600"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Salvataggio..." : "Crea prenotazione"}
+      </Button>
+    </form>
+  );
+}
