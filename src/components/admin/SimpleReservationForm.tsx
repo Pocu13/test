@@ -15,6 +15,7 @@ interface SimpleReservationFormProps {
     phone: string;
     people: number;
     notes: string;
+    time: string; // ✅ Aggiunto qui
   }) => void;
   isSubmitting: boolean;
   alwaysVisible?: boolean;
@@ -32,8 +33,8 @@ export function SimpleReservationForm({
   const [phone, setPhone] = useState("");
   const [people, setPeople] = useState(selectedTable?.capacity || 2);
   const [notes, setNotes] = useState("");
-  
-  // Aggiorna il numero di persone quando viene selezionato un tavolo
+  const [time, setTime] = useState(""); // ✅ Nuovo stato
+
   useEffect(() => {
     if (selectedTable) {
       setPeople(selectedTable.capacity);
@@ -49,7 +50,8 @@ export function SimpleReservationForm({
       email,
       phone,
       people,
-      notes
+      notes,
+      time // ✅ incluso
     });
     
     // Reset form
@@ -58,6 +60,7 @@ export function SimpleReservationForm({
     setEmail("");
     setPhone("");
     setNotes("");
+    setTime(""); // ✅ reset
   };
 
   if (!alwaysVisible && !selectedTable) {
@@ -144,7 +147,19 @@ export function SimpleReservationForm({
           </p>
         )}
       </div>
-      
+
+      {/* ✅ Campo per l'orario */}
+      <div className="space-y-2">
+        <Label htmlFor="time">Orario</Label>
+        <Input
+          id="time"
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
+        />
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="notes">Note</Label>
         <Textarea
