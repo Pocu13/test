@@ -1,4 +1,3 @@
-
 import { ReservationList } from "@/components/admin/ReservationList";
 import { SimpleTableMap } from "@/components/admin/SimpleTableMap";
 import { SimpleReservationForm } from "@/components/admin/SimpleReservationForm";
@@ -14,6 +13,7 @@ import { RefreshCw, PlusIcon } from "lucide-react";
 import { MobileReservationForm } from "@/components/admin/MobileReservationForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
+import { Calendar } from "@/components/ui/calendar"; // IMPORT calendario
 
 export default function ReservationsPage() {
   const { reservations, loading, addReservation, reload, updateReservationStatus, updateReservationTable } = useReservations();
@@ -22,10 +22,10 @@ export default function ReservationsPage() {
   const [highlightReservation, setHighlightReservation] = useState<string | null>(null);
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()); // STATO per data
   const isMobile = useIsMobile();
 
   const handleTableSelect = (table: TableDefinition) => {
-    // Controlla se il tavolo è già occupato
     const isTableOccupied = reservations.some(res => 
       res.tableId === table.id && 
       (res.status === "pending" || res.status === "confirmed")
@@ -60,8 +60,8 @@ export default function ReservationsPage() {
     setIsSubmitting(true);
     
     try {
-      const today = new Date();
-      
+      const today = selectedDate ?? new Date(); // Usa data selezionata
+
       const newReservation = {
         name: formData.name,
         surname: formData.surname,
@@ -72,10 +72,9 @@ export default function ReservationsPage() {
         people: formData.people,
         notes: formData.notes || ""
       };
-      
+
       let tableInfo;
       
-      // Se c'è un tavolo selezionato, usalo per la prenotazione
       if (selectedTable) {
         tableInfo = {
           tableId: selectedTable.id,
@@ -83,28 +82,19 @@ export default function ReservationsPage() {
         };
         console.log(`Tavolo selezionato manualmente: ${selectedTable.number} (${selectedTable.id})`);
       }
-      
-      // Aggiungi la prenotazione
+
       const reservation = await addReservation(newReservation, tableInfo);
-      
+
       if (reservation) {
-        // Imposta lo stato della prenotazione a "confermato"
         await updateReservationStatus(reservation.id, "confirmed");
-        
         toast({
           title: "Prenotazione confermata",
           description: `Prenotazione creata${tableInfo ? ` e assegnata al tavolo ${tableInfo.tableNumber}` : ''}`,
         });
       }
-      
-      // Reset della selezione del tavolo
+
       setSelectedTable(null);
-      
-      if (isMobile) {
-        setMobileDialogOpen(false);
-      }
-      
-      // Ricarica le prenotazioni dopo la creazione
+      if (isMobile) setMobileDialogOpen(false);
       await reload();
     } catch (error) {
       console.error("Errore durante la creazione della prenotazione:", error);
@@ -117,27 +107,22 @@ export default function ReservationsPage() {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleReservationStatusChange = async (reservation: Reservation) => {
-    // Evidenzia brevemente il tavolo corrispondente
     setHighlightReservation(reservation.id);
-    
-    // Rimuovi l'evidenziazione dopo qualche secondo
     setTimeout(() => {
       setHighlightReservation(null);
     }, 2000);
   };
-  
-  // Aggiorna automaticamente le prenotazioni ogni 40 secondi
+
   useEffect(() => {
     const intervalId = setInterval(() => {
       reload();
     }, 40000);
-    
     return () => clearInterval(intervalId);
   }, [reload]);
 
-  // Versione mobile
+  // VERSIONE MOBILE
   if (isMobile) {
     return (
       <div className="space-y-6">
@@ -178,75 +163,66 @@ export default function ReservationsPage() {
     );
   }
 
-  // Versione desktop
-import { Calendar } from "@/components/ui/calendar"; // <-- assicurati che questo import esista
-
-// ...in cima al componente:
-const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-
-// ...dentro handleCreateReservation, sostituisci:
-const today = new Date();
-// con:
-const today = selectedDate ?? new Date();
-
-return (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
-      <Button 
-        onClick={handleRefresh} 
-        variant="outline"
-        disabled={refreshing}
-      >
-        <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
-        {refreshing ? "Aggiornamento..." : "Aggiorna prenotazioni"}
-      </Button>
-    </div>
-    
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 space-y-4">
-        <div className="border rounded-md p-4 bg-white">
-          <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
-          <SimpleTableMap 
-            reservations={reservations}
-            onTableSelect={handleTableSelect}
-            selectedTableId={selectedTable?.id}
-            highlightReservation={highlightReservation}
-          />
-        </div>
-        
-        <div className="border rounded-md p-4 bg-white">
-          <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
-          <ReservationList onReservationConfirmed={handleReservationStatusChange} />
-        </div>
+  // VERSIONE DESKTOP + TABLET
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gestione Prenotazioni</h1>
+        <Button 
+          onClick={handleRefresh} 
+          variant="outline"
+          disabled={refreshing}
+        >
+          <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Aggiornamento..." : "Aggiorna prenotazioni"}
+        </Button>
       </div>
       
-      <div>
-        <div className="border rounded-md p-4 bg-white space-y-4">
-          <h3 className="text-lg font-medium">
-            {selectedTable 
-              ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
-              : "Nuova prenotazione"}
-          </h3>
-
-          <div>
-            <p className="text-sm mb-2 font-medium">Seleziona una data:</p>
-            <Calendar 
-              mode="single" 
-              selected={selectedDate} 
-              onSelect={setSelectedDate}
-              className="rounded-md border"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="border rounded-md p-4 bg-white">
+            <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
+            <SimpleTableMap 
+              reservations={reservations}
+              onTableSelect={handleTableSelect}
+              selectedTableId={selectedTable?.id}
+              highlightReservation={highlightReservation}
             />
           </div>
+          
+          <div className="border rounded-md p-4 bg-white">
+            <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
+            <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+          </div>
+        </div>
+        
+        <div>
+          <div className="border rounded-md p-4 bg-white space-y-4">
+            <h3 className="text-lg font-medium">
+              {selectedTable 
+                ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
+                : "Nuova prenotazione"}
+            </h3>
 
-          <SimpleReservationForm
-            selectedTable={selectedTable}
-            onSubmit={handleCreateReservation}
-            isSubmitting={isSubmitting}
-            alwaysVisible={true}
-          />
+            <div>
+              <p className="text-sm mb-2 font-medium">Seleziona una data:</p>
+              <Calendar 
+                mode="single" 
+                selected={selectedDate} 
+                onSelect={setSelectedDate}
+                className="rounded-md border"
+              />
+            </div>
+
+            <SimpleReservationForm
+              selectedTable={selectedTable}
+              onSubmit={handleCreateReservation}
+              isSubmitting={isSubmitting}
+              alwaysVisible={true}
+            />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+}
