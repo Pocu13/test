@@ -6,7 +6,7 @@ import { useReservations } from "@/contexts/ReservationContext";
 import { TableDefinition } from "@/types/table";
 import { Reservation } from "@/types";
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw, PlusIcon } from "lucide-react";
@@ -29,8 +29,15 @@ export default function ReservationsPage() {
 
   const availableTimes = ["20:00", "20:30", "21:00", "21:30", "22:00", "22:30"];
 
+  // Filtra le prenotazioni in base alla data e all'orario selezionati
+  const filteredReservations = reservations.filter(reservation => {
+    const isSameDate = isSameDay(new Date(reservation.date), selectedDate);
+    const isSameTime = reservation.time === selectedTime;
+    return isSameDate && isSameTime;
+  });
+
   const handleTableSelect = (table: TableDefinition) => {
-    const isTableOccupied = reservations.some(res => 
+    const isTableOccupied = filteredReservations.some(res => 
       res.tableId === table.id && 
       (res.status === "pending" || res.status === "confirmed")
     );
@@ -38,7 +45,7 @@ export default function ReservationsPage() {
     if (isTableOccupied) {
       toast({
         title: "Tavolo non disponibile",
-        description: `Il tavolo ${table.number} è occupato e non può essere selezionato`,
+        description: `Il tavolo ${table.number} è occupato per la data/ora selezionata`,
         variant: "destructive"
       });
       return;
@@ -69,8 +76,8 @@ export default function ReservationsPage() {
         surname: formData.surname,
         email: formData.email,
         phone: formData.phone,
-        date: selectedDate, // Usa la data selezionata dal calendario
-        time: selectedTime, // Usa l'orario selezionato
+        date: selectedDate,
+        time: selectedTime,
         people: formData.people,
         notes: formData.notes || ""
       };
@@ -121,14 +128,11 @@ export default function ReservationsPage() {
       setHighlightReservation(null);
     }, 2000);
   };
-  
+
+  // Aggiorna automaticamente le prenotazioni quando cambia la data o l'orario
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      reload();
-    }, 40000);
-    
-    return () => clearInterval(intervalId);
-  }, [reload]);
+    reload();
+  }, [selectedDate, selectedTime, reload]);
 
   // Versione mobile
   if (isMobile) {
@@ -146,9 +150,52 @@ export default function ReservationsPage() {
             {refreshing ? "Aggiornamento..." : "Aggiorna"}
           </Button>
         </div>
+
+        <div className="flex gap-4 mb-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              className="rounded-md border"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Orario</label>
+            <Select value={selectedTime} onValueChange={setSelectedTime}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleziona orario" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTimes.map(time => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         
         <div className="relative">
-          <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+          <div className="border rounded-md p-4 bg-white mb-4">
+            <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
+            <SimpleTableMap 
+              reservations={filteredReservations}
+              onTableSelect={handleTableSelect}
+              selectedTableId={selectedTable?.id}
+              highlightReservation={highlightReservation}
+            />
+          </div>
+          
+          <div className="border rounded-md p-4 bg-white">
+            <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
+            <ReservationList 
+              reservations={filteredReservations}
+              onReservationConfirmed={handleReservationStatusChange} 
+            />
+          </div>
           
           <Dialog open={mobileDialogOpen} onOpenChange={setMobileDialogOpen}>
             <DialogTrigger asChild>
@@ -191,12 +238,39 @@ export default function ReservationsPage() {
         </Button>
       </div>
       
+      <div className="flex gap-4 mb-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => date && setSelectedDate(date)}
+            className="rounded-md border"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Orario</label>
+          <Select value={selectedTime} onValueChange={setSelectedTime}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleziona orario" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableTimes.map(time => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
             <SimpleTableMap 
-              reservations={reservations}
+              reservations={filteredReservations}
               onTableSelect={handleTableSelect}
               selectedTableId={selectedTable?.id}
               highlightReservation={highlightReservation}
@@ -205,7 +279,10 @@ export default function ReservationsPage() {
           
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
-            <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+            <ReservationList 
+              reservations={filteredReservations}
+              onReservationConfirmed={handleReservationStatusChange} 
+            />
           </div>
         </div>
         
@@ -216,33 +293,6 @@ export default function ReservationsPage() {
                 ? `Nuova prenotazione per tavolo ${selectedTable.label || "TAV." + selectedTable.number}`
                 : "Nuova prenotazione"}
             </h3>
-            
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  className="rounded-md border"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Orario</label>
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona orario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimes.map(time => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             
             <SimpleReservationForm
               selectedTable={selectedTable}
