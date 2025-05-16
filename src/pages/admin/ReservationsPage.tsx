@@ -31,7 +31,9 @@ export default function ReservationsPage() {
 
   const handleTableSelect = (table: TableDefinition) => {
     const isTableOccupied = reservations.some(res => 
-      res.tableId === table.id && 
+      res.tableId === table.id &&
+      res.time === selectedTime &&
+      format(new Date(res.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd") &&
       (res.status === "pending" || res.status === "confirmed")
     );
     
@@ -69,8 +71,8 @@ export default function ReservationsPage() {
         surname: formData.surname,
         email: formData.email,
         phone: formData.phone,
-        date: selectedDate, // Usa la data selezionata dal calendario
-        time: selectedTime, // Usa l'orario selezionato
+        date: selectedDate,
+        time: selectedTime,
         people: formData.people,
         notes: formData.notes || ""
       };
@@ -130,7 +132,6 @@ export default function ReservationsPage() {
     return () => clearInterval(intervalId);
   }, [reload]);
 
-  // Versione mobile
   if (isMobile) {
     return (
       <div className="space-y-6">
@@ -148,7 +149,11 @@ export default function ReservationsPage() {
         </div>
         
         <div className="relative">
-          <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+          <ReservationList
+            onReservationConfirmed={handleReservationStatusChange}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+          />
           
           <Dialog open={mobileDialogOpen} onOpenChange={setMobileDialogOpen}>
             <DialogTrigger asChild>
@@ -176,7 +181,6 @@ export default function ReservationsPage() {
     );
   }
 
-  // Versione desktop
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -196,7 +200,10 @@ export default function ReservationsPage() {
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Piantina tavoli</h3>
             <SimpleTableMap 
-              reservations={reservations}
+              reservations={reservations.filter(r => 
+                format(new Date(r.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd") &&
+                r.time === selectedTime
+              )}
               onTableSelect={handleTableSelect}
               selectedTableId={selectedTable?.id}
               highlightReservation={highlightReservation}
@@ -205,7 +212,11 @@ export default function ReservationsPage() {
           
           <div className="border rounded-md p-4 bg-white">
             <h3 className="text-lg font-medium mb-4">Elenco prenotazioni</h3>
-            <ReservationList onReservationConfirmed={handleReservationStatusChange} />
+            <ReservationList
+              onReservationConfirmed={handleReservationStatusChange}
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+            />
           </div>
         </div>
         
