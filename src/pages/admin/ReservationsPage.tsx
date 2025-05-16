@@ -45,32 +45,42 @@ export default function ReservationsPage() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Gestione Prenotazioni</h1>
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex flex-col gap-2">
+        {/* SEZIONE CALENDARIO E ORARIO */}
+        <div className="flex flex-col gap-4 w-full md:w-auto">
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={(date) => setSelectedDate(date)}
             className="rounded-md border"
           />
-          <label className="text-sm font-medium mt-4" htmlFor="time-picker">
-            Seleziona un orario:
-          </label>
-          <select
-            id="time-picker"
-            className="border rounded-md p-2 text-sm"
-            value={selectedTime}
-            onChange={(e) => setSelectedTime(e.target.value)}
-          >
-            <option value="20:00">20:00</option>
-            <option value="20:30">20:30</option>
-            <option value="21:00">21:00</option>
-            <option value="21:30">21:30</option>
-            <option value="22:00">22:00</option>
-            <option value="22:30">22:30</option>
-          </select>
+
+          <div>
+            <label className="text-sm font-medium" htmlFor="time-picker">
+              Seleziona un orario:
+            </label>
+            <select
+              id="time-picker"
+              className="border rounded-md p-2 text-sm mt-1 w-full"
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+            >
+              <option value="20:00">20:00</option>
+              <option value="20:30">20:30</option>
+              <option value="21:00">21:00</option>
+              <option value="21:30">21:30</option>
+              <option value="22:00">22:00</option>
+              <option value="22:30">22:30</option>
+            </select>
+          </div>
         </div>
 
-        <div className="flex-1">
+        {/* SEZIONE MAPPA + LISTA PRENOTAZIONI */}
+        <div className="flex-1 flex flex-col gap-4">
+          <SimpleTableMap
+            selectedTable={selectedTable}
+            setSelectedTable={setSelectedTable}
+            highlightReservation={highlightReservation}
+          />
           <ReservationList
             reservations={filteredReservations}
             onHighlight={setHighlightReservation}
