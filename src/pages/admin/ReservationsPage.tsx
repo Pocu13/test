@@ -14,6 +14,7 @@ import { MobileReservationForm } from "@/components/admin/MobileReservationForm"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function ReservationsPage() {
   const { reservations, loading, addReservation, reload, updateReservationStatus, updateReservationTable } = useReservations();
@@ -22,13 +23,13 @@ export default function ReservationsPage() {
   const [highlightReservation, setHighlightReservation] = useState<string | null>(null);
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("20:00");
   const isMobile = useIsMobile();
 
   const availableTimes = ["20:00", "20:30", "21:00", "21:30", "22:00", "22:30"];
 
   const handleTableSelect = (table: TableDefinition) => {
-    // Controlla se il tavolo è già occupato
     const isTableOccupied = reservations.some(res => 
       res.tableId === table.id && 
       (res.status === "pending" || res.status === "confirmed")
@@ -63,15 +64,13 @@ export default function ReservationsPage() {
     setIsSubmitting(true);
     
     try {
-      const today = new Date();
-      
       const newReservation = {
         name: formData.name,
         surname: formData.surname,
         email: formData.email,
         phone: formData.phone,
-        date: today,
-        time: selectedTime, // Usa l'orario selezionato dal menu
+        date: selectedDate, // Usa la data selezionata dal calendario
+        time: selectedTime, // Usa l'orario selezionato
         people: formData.people,
         notes: formData.notes || ""
       };
@@ -164,6 +163,8 @@ export default function ReservationsPage() {
                 onSubmit={handleCreateReservation}
                 isSubmitting={isSubmitting}
                 onCancel={() => setMobileDialogOpen(false)}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
                 selectedTime={selectedTime}
                 onTimeChange={setSelectedTime}
                 availableTimes={availableTimes}
@@ -216,20 +217,31 @@ export default function ReservationsPage() {
                 : "Nuova prenotazione"}
             </h3>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Orario</label>
-              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona orario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTimes.map(time => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="rounded-md border"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Orario</label>
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona orario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimes.map(time => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <SimpleReservationForm
