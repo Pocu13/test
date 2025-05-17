@@ -7,24 +7,21 @@ import { format } from "date-fns";
 interface ReservationListProps {
   onReservationConfirmed?: (reservation: Reservation) => void;
   selectedDate: Date;
-  selectedTime: string;
 }
 
 export function ReservationList({
   onReservationConfirmed,
   selectedDate,
-  selectedTime,
 }: ReservationListProps) {
   const { reservations } = useReservations();
 
   const filteredReservations = useMemo(() => {
-    return reservations.filter((res) => {
-      const sameDate =
-        format(new Date(res.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
-      const sameTime = res.time === selectedTime;
-      return sameDate && sameTime;
-    });
-  }, [reservations, selectedDate, selectedTime]);
+    return reservations
+      .filter((res) =>
+        format(new Date(res.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+      )
+      .sort((a, b) => a.time.localeCompare(b.time));
+  }, [reservations, selectedDate]);
 
   return (
     <ReservationTable
