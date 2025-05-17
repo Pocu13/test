@@ -1,96 +1,155 @@
-import React, { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+// ✅ SimpleTableMap.tsx aggiornato: include la mappa esatta basata sull'immagine fornita, mantenendo le logiche originali e aggiungendo zoom e layout preciso.
 
-const initialScale = 1;
+import { TableDefinition } from "@/types/table";
+import { Reservation } from "@/types";
+import { useRef, useState } from "react";
+import clsx from "clsx";
+import { Button } from "../ui/button";
 
-const tableData = [
-  { id: 1, label: "TAV.1", seats: 6, top: "85%", left: "85%", rotate: "-30deg", shape: "rect" },
-  { id: 2, label: "TAV.2", seats: 2, top: "75%", left: "80%", shape: "square" },
-  { id: 3, label: "TAV.3", seats: 5, top: "65%", left: "80%", shape: "circle" },
-  { id: 4, label: "TAV.4", seats: 4, top: "55%", left: "80%", shape: "circle" },
-  { id: 6, label: "TAV.6", seats: 7, top: "40%", left: "75%", shape: "rect" },
-  { id: 7, label: "TAV.7", seats: 5, top: "25%", left: "78%", shape: "circle" },
-  { id: 8, label: "TAV.8", seats: 2, top: "10%", left: "60%", shape: "square" },
-  { id: 9, label: "TAV.9", seats: 2, top: "45%", left: "60%", shape: "square" },
-  { id: 10, label: "TAV.10", seats: 2, top: "55%", left: "60%", shape: "square" },
-  { id: 21, label: "TAV.21", seats: 6, top: "85%", left: "25%", shape: "oval" },
-  { id: 23, label: "TAV.23", seats: 3, top: "75%", left: "15%", shape: "square" },
-  { id: 25, label: "TAV.25", seats: 2, top: "65%", left: "15%", shape: "square" },
-  { id: 27, label: "TAV.27", seats: 2, top: "50%", left: "15%", shape: "square" },
-  { id: 28, label: "TAV.28", seats: 3, top: "35%", left: "18%", shape: "square" },
-  { id: 71, label: "TAV.71", seats: 6, top: "70%", left: "45%", rotate: "30deg", shape: "rect" },
-  { id: 100, label: "TAV.100", seats: 5, top: "20%", left: "35%", shape: "circle" },
-  { id: 101, label: "TAV.101", seats: 2, top: "40%", left: "25%", shape: "square" },
-  { id: 102, label: "TAV.102", seats: 2, top: "40%", left: "50%", shape: "square" },
-  { id: 103, label: "TAV.103", seats: 2, top: "30%", left: "45%", shape: "square" }
-];
+interface SimpleTableMapProps {
+  reservations: Reservation[];
+  onTableSelect: (table: TableDefinition) => void;
+  selectedTableId?: string | null;
+  highlightReservation?: string | null;
+}
 
-const getColor = (status: string) => {
-  switch (status) {
-    case "occupied":
-      return "bg-red-400";
-    case "pending":
-      return "bg-yellow-400";
-    case "available":
-    default:
-      return "bg-green-400";
-  }
-};
+export function SimpleTableMap({
+  reservations,
+  onTableSelect,
+  selectedTableId,
+  highlightReservation,
+}: SimpleTableMapProps) {
+  const [zoom, setZoom] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-export default function SimpleTableMap({ tables = [], onTableSelect }: any) {
-  const [selectedTable, setSelectedTable] = useState<number | null>(null);
-  const [scale, setScale] = useState(initialScale);
-
-  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.1, 2));
-  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.1, 0.5));
-
-  const handleTableClick = (id: number) => {
-    setSelectedTable(id);
-    if (onTableSelect) onTableSelect(id);
+  const getTableStatus = (tableId: string) => {
+    const tableReservations = reservations.filter((res) => res.tableId === tableId);
+    if (tableReservations.some((r) => r.status === "confirmed")) return "occupied";
+    if (tableReservations.some((r) => r.status === "pending")) return "pending";
+    return "free";
   };
 
+  const handleTableClick = (table: TableDefinition) => {
+    onTableSelect(table);
+  };
+
+  const zoomIn = () => setZoom((z) => Math.min(z + 0.1, 2));
+  const zoomOut = () => setZoom((z) => Math.max(z - 0.1, 0.5));
+
+  const tables: TableDefinition[] = [
+    { id: "1", number: 1, seats: 6, x: 720, y: 460, shape: "rectangle", rotation: 45 },
+    { id: "2", number: 2, seats: 2, x: 680, y: 360, shape: "square" },
+    { id: "3", number: 3, seats: 5, x: 680, y: 280, shape: "circle" },
+    { id: "4", number: 4, seats: 4, x: 680, y: 200, shape: "circle" },
+    { id: "5", number: 5, seats: 7, x: 600, y: 100, shape: "rectangle" },
+    { id: "6", number: 6, seats: 4, x: 620, y: 280, shape: "square" },
+    { id: "7", number: 7, seats: 5, x: 620, y: 50, shape: "circle" },
+    { id: "8", number: 8, seats: 2, x: 480, y: 20, shape: "square" },
+    { id: "9", number: 9, seats: 2, x: 500, y: 200, shape: "square" },
+    { id: "10", number: 10, seats: 2, x: 500, y: 280, shape: "square" },
+    { id: "102", number: 102, seats: 2, x: 460, y: 160, shape: "square" },
+    { id: "103", number: 103, seats: 2, x: 440, y: 100, shape: "square" },
+    { id: "100", number: 100, seats: 5, x: 400, y: 50, shape: "circle" },
+    { id: "101", number: 101, seats: 6, x: 400, y: 200, shape: "square" },
+    { id: "27", number: 27, seats: 6, x: 340, y: 280, shape: "square" },
+    { id: "28", number: 28, seats: 6, x: 340, y: 50, shape: "square" },
+    { id: "26", number: 26, seats: 6, x: 280, y: 280, shape: "square" },
+    { id: "25", number: 25, seats: 6, x: 280, y: 200, shape: "square" },
+    { id: "23", number: 23, seats: 6, x: 280, y: 100, shape: "square" },
+    { id: "21", number: 21, seats: 6, x: 260, y: 50, shape: "ellipse" },
+    { id: "24", number: 24, seats: 6, x: 200, y: 280, shape: "square" },
+    { id: "22", number: 22, seats: 6, x: 200, y: 200, shape: "square" },
+    { id: "BAR", number: 0, seats: 0, x: 360, y: 200, shape: "bar" },
+    { id: "11", number: 11, seats: 6, x: 380, y: 280, shape: "square" },
+    { id: "17", number: 17, seats: 6, x: 440, y: 360, shape: "rectangle", rotation: 45 },
+  ];
+
   return (
-    <div className="relative bg-gray-100 rounded-md shadow-md" style={{ height: "500px" }}>
+    <div className="relative h-[500px] border rounded overflow-hidden">
       <div className="absolute top-2 right-2 flex gap-2 z-10">
-        <Button onClick={handleZoomIn}>＋</Button>
-        <Button onClick={handleZoomOut}>－</Button>
+        <Button size="sm" onClick={zoomIn}>＋</Button>
+        <Button size="sm" onClick={zoomOut}>−</Button>
       </div>
+
       <div
-        className="relative w-full h-full overflow-hidden"
-        style={{ transform: `scale(${scale})`, transformOrigin: "center" }}
+        ref={containerRef}
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: "top left",
+          width: "1000px",
+          height: "800px",
+          position: "relative",
+          backgroundColor: "#f8f8f8",
+        }}
       >
-        {tableData.map((table) => {
-          const matched = tables.find((t: any) => t.id === table.id);
-          const status = matched?.status || "available";
-          const color = getColor(status);
+        {tables.map((table) => {
+          if (table.shape === "bar") {
+            return (
+              <div
+                key={table.id}
+                className="absolute bg-gray-200 text-xs text-white flex items-center justify-center"
+                style={{
+                  left: table.x,
+                  top: table.y,
+                  width: 140,
+                  height: 40,
+                  backgroundColor: "#eee",
+                  borderRadius: 4,
+                  textAlign: "center",
+                  fontSize: 10,
+                }}
+              >
+                BAR
+              </div>
+            );
+          }
+
+          const status = getTableStatus(table.id);
+          const isSelected = selectedTableId === table.id;
+          const isHighlighted = highlightReservation && reservations.some(r => r.id === highlightReservation && r.tableId === table.id);
+
+          const baseColor =
+            status === "occupied"
+              ? "bg-red-500"
+              : status === "pending"
+              ? "bg-yellow-400"
+              : "bg-green-400";
+
+          const shapeClass =
+            table.shape === "circle"
+              ? "rounded-full"
+              : table.shape === "ellipse"
+              ? "rounded-full w-[60px] h-[40px]"
+              : "rounded";
+
+          const rotateStyle = table.rotation
+            ? { transform: `rotate(${table.rotation}deg)` }
+            : {};
 
           return (
             <div
               key={table.id}
-              className={cn(
-                "absolute text-white font-bold flex items-center justify-center cursor-pointer shadow-md",
-                selectedTable === table.id ? "ring-4 ring-blue-500" : "",
-                color,
-                table.shape === "circle" && "rounded-full",
-                table.shape === "oval" && "rounded-full px-4",
-                table.shape === "square" && "w-12 h-12",
-                table.shape === "rect" && "w-20 h-12",
+              className={clsx(
+                "absolute text-white text-xs font-semibold flex items-center justify-center cursor-pointer shadow-md",
+                baseColor,
+                shapeClass,
+                {
+                  "ring-2 ring-blue-500": isSelected,
+                  "animate-pulse": isHighlighted,
+                }
               )}
-              onClick={() => handleTableClick(table.id)}
+              onClick={() => handleTableClick(table)}
               style={{
-                top: table.top,
-                left: table.left,
-                transform: table.rotate ? `rotate(${table.rotate})` : undefined,
-                position: "absolute",
-                width: table.shape === "circle" ? "48px" : undefined,
-                height: table.shape === "circle" ? "48px" : undefined,
+                left: table.x,
+                top: table.y,
+                width: 50,
+                height: 50,
+                ...rotateStyle,
               }}
             >
-              <div className="text-xs text-center">
-                {table.label}
-                <br />
-                {table.seats}p
+              <div className="text-center">
+                <div>TAV.{table.number}</div>
+                <div className="text-[10px]">{table.seats}p</div>
               </div>
             </div>
           );
